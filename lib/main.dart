@@ -4,24 +4,45 @@ void main() {
   runApp(const QueryWizApp());
 }
 
-class QueryWizApp extends StatelessWidget {
+class QueryWizApp extends StatefulWidget {
   const QueryWizApp({super.key});
+
+  @override
+  State<QueryWizApp> createState() => _QueryWizAppState();
+}
+
+class _QueryWizAppState extends State<QueryWizApp> {
+  bool _isDarkTheme = true;
+
+  void _toggleTheme() {
+    setState(() {
+      _isDarkTheme = !_isDarkTheme;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
+      theme: _isDarkTheme
+          ? ThemeData.dark().copyWith(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.cyan),
         scaffoldBackgroundColor: Colors.black,
+      )
+          : ThemeData.light().copyWith(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.cyan),
+        scaffoldBackgroundColor: Colors.white,
       ),
-      home: const ChatScreen(),
+      home: ChatScreen(toggleTheme: _toggleTheme, isDarkTheme: _isDarkTheme),
     );
   }
 }
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final VoidCallback toggleTheme;
+  final bool isDarkTheme;
+
+  const ChatScreen({super.key, required this.toggleTheme, required this.isDarkTheme});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -30,16 +51,36 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final List<Map<String, String>> _messages = [];
+  final ScrollController _scrollController = ScrollController();
+  bool _isLoading = false;
 
   void _sendMessage() {
     final message = _controller.text.trim();
     if (message.isNotEmpty) {
       setState(() {
         _messages.add({'user': message});
-        _messages.add({'bot': "Here's a sample answer for: '$message'"});
+        _isLoading = true; // Show loading indicator
       });
       _controller.clear();
+
+      Future.delayed(const Duration(seconds: 2), () {
+        setState(() {
+          _messages.add({'bot': "Here's a sample answer for: '$message'"});
+          _isLoading = false; // Hide loading indicator
+        });
+        _scrollToBottom(); // Auto-scroll after response
+      });
     }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   @override
@@ -52,11 +93,18 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         centerTitle: true,
         backgroundColor: Colors.black54,
+        actions: [
+          IconButton(
+            icon: Icon(widget.isDarkTheme ? Icons.light_mode : Icons.dark_mode),
+            onPressed: widget.toggleTheme,
+          ),
+        ],
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(10),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
@@ -80,6 +128,11 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
           ),
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CircularProgressIndicator(),
+            ),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
@@ -112,5 +165,12 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 }
