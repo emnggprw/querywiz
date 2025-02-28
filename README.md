@@ -32,7 +32,7 @@ Follow these steps to run QueryWiz locally:
 
 1️⃣ **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/QueryWiz.git
+git clone https://github.com/emnggprw/QueryWiz.git
 cd QueryWiz
 ```  
 
