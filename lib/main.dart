@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:fluttertoast/fluttertoast.dart';
 
 void main() {
   runApp(const QueryWizApp());
@@ -31,80 +32,58 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   final List<Map<String, String>> _messages = [];
   bool _isLoading = false;
   bool _isDarkMode = true;
 
-  // API Configuration Variables
   final String apiUrl = "https://api.example.com/chat";
   final String apiKey = "your_api_key_here";
 
-  // Function to send user message and fetch bot response
   Future<void> _sendMessage() async {
     final message = _controller.text.trim();
-    if (message.isNotEmpty) {
-      setState(() {
-        _messages.add({'user': message});
-        _isLoading = true;
-      });
-      _controller.clear();
+    if (message.isEmpty) return;
 
-      try {
-        final response = await _fetchResponse(message);
-        if (response != null) {
-          setState(() {
-            _messages.add({'bot': response});
-          });
-        } else {
-          setState(() {
-            _messages.add({'bot': 'Failed to get a valid response.'});
-          });
-        }
-      } catch (e) {
-        setState(() {
-          _messages.add({'bot': 'Error: $e'});
-        });
-      } finally {
-        setState(() => _isLoading = false);
-        _scrollToBottom();
-      }
+    setState(() {
+      _messages.add({'user': message});
+      _isLoading = true;
+    });
+    _controller.clear();
+
+    try {
+      final response = await _fetchResponse(message);
+      setState(() {
+        _messages.add({'bot': response ?? 'No response received.'});
+      });
+    } catch (e) {
+      Fluttertoast.showToast(msg: "Error: $e", backgroundColor: Colors.red);
+    } finally {
+      setState(() => _isLoading = false);
+      _scrollToBottom();
     }
   }
 
-  // API call to get response
   Future<String?> _fetchResponse(String userMessage) async {
     try {
-      // Prepare request headers and body
-      final headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $apiKey'
-      };
-      final body = jsonEncode({"prompt": userMessage});
-
-      debugPrint("[API Request] URL: $apiUrl, Message: $userMessage");
-
       final response = await http.post(
         Uri.parse(apiUrl),
-        headers: headers,
-        body: body,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $apiKey',
+        },
+        body: jsonEncode({"prompt": userMessage}),
       );
-
-      debugPrint("[API Response] Status: ${response.statusCode}, Body: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['response'] ?? 'No valid response received.';
+        return data['response'] ?? 'No valid response.';
       } else {
         return 'Error: ${response.statusCode} - ${response.reasonPhrase}';
       }
     } catch (e) {
-      debugPrint("[API Error] $e");
-      return null;
+      return 'Error fetching response.';
     }
   }
-
-  // Scroll to bottom after message is sent
-  final ScrollController _scrollController = ScrollController();
 
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 300), () {
@@ -116,7 +95,6 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  // Toggle Light/Dark Theme
   void _toggleTheme() {
     setState(() => _isDarkMode = !_isDarkMode);
   }
@@ -127,10 +105,7 @@ class _ChatScreenState extends State<ChatScreen> {
       theme: _isDarkMode ? ThemeData.dark() : ThemeData.light(),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'QueryWiz 💬',
-            style: TextStyle(color: Colors.cyanAccent),
-          ),
+          title: const Text('QueryWiz 💬', style: TextStyle(color: Colors.cyanAccent)),
           centerTitle: true,
           backgroundColor: Colors.black54,
           actions: [
@@ -191,6 +166,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           borderSide: BorderSide.none,
                         ),
                       ),
+                      onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
                   const SizedBox(width: 8),
