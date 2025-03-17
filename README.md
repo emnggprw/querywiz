@@ -44,22 +44,7 @@ flutter pub get
 3️⃣ **Run the app**
 ```bash
 flutter run
-```  
-
----
-
-## 🔗 API Configuration
-Modify the `api_service.dart` file to set up your API:
-```dart
-class ApiConfig {
-  static const String baseUrl = "https://your-api-endpoint.com";
-  static const String apiKey = "your-api-key";
-  static Map<String, String> headers = {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer $apiKey",
-  };
-}
-```  
+```
 
 ---
 
