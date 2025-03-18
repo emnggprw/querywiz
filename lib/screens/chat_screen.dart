@@ -56,8 +56,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['response'] ?? 'No valid response.';
-      } else {
+        if (data.containsKey('response')) {
+          return data['response'];
+        } else {
+          return 'Unexpected response format.';
+        }
+      }
+      else {
         return 'Error: ${response.statusCode} - ${response.reasonPhrase}';
       }
     } catch (e) {

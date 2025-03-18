@@ -33,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('QueryWiz Conversations', style: TextStyle(color: Colors.cyanAccent)),
+        title: const Text('QueryWiz 💬', style: TextStyle(color: Colors.cyanAccent)),
         centerTitle: true,
         backgroundColor: Colors.black54,
         elevation: 0,
