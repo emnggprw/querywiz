@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:querywiz/models/conversation.dart';
+import 'package:querywiz/models/message.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final Conversation conversation;
+
+  const ChatScreen({super.key, required this.conversation});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -13,7 +17,6 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<Map<String, String>> _messages = [];
   bool _isLoading = false;
   bool _isDarkMode = true;
 
@@ -25,7 +28,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (message.isEmpty) return;
 
     setState(() {
-      _messages.add({'user': message});
+      widget.conversation.messages.add(Message(text: message, isUser: true, timestamp: DateTime.now()));
       _isLoading = true;
     });
     _controller.clear();
@@ -33,7 +36,7 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final response = await _fetchResponse(message);
       setState(() {
-        _messages.add({'bot': response ?? 'No response received.'});
+        widget.conversation.messages.add(Message(text: response ?? 'No response received.', isUser: false, timestamp: DateTime.now()));
       });
     } catch (e) {
       Fluttertoast.showToast(msg: "Error: $e", backgroundColor: Colors.red);
@@ -61,8 +64,7 @@ class _ChatScreenState extends State<ChatScreen> {
         } else {
           return 'Unexpected response format.';
         }
-      }
-      else {
+      } else {
         return 'Error: ${response.statusCode} - ${response.reasonPhrase}';
       }
     } catch (e) {
@@ -86,87 +88,88 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: _isDarkMode ? ThemeData.dark() : ThemeData.light(),
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('QueryWiz 💬', style: TextStyle(color: Colors.cyanAccent)),
-          centerTitle: true,
-          backgroundColor: Colors.black54,
-          actions: [
-            IconButton(
-              icon: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode),
-              onPressed: _toggleTheme,
-            ),
-          ],
-        ),
-        body: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(10),
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  final msg = _messages[index];
-                  final isUser = msg.containsKey('user');
-                  return Align(
-                    alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: isUser ? Colors.cyan.shade700 : Colors.grey.shade800,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        isUser ? msg['user']! : msg['bot']!,
-                        style: const TextStyle(color: Colors.white),
-                      ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('QueryWiz 💬', style: TextStyle(color: Colors.cyanAccent)),
+        centerTitle: true,
+        backgroundColor: Colors.black54,
+        actions: [
+          IconButton(
+            icon: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            onPressed: _toggleTheme,
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(10),
+              itemCount: widget.conversation.messages.length,
+              itemBuilder: (context, index) {
+                final msg = widget.conversation.messages[index];
+                return Align(
+                  alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 5),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: msg.isUser ? Colors.cyan.shade700 : Colors.grey.shade800,
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                  );
-                },
-              ),
-            ),
-            if (_isLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: CircularProgressIndicator(color: Colors.cyanAccent),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
+                    child: Text(
+                      msg.text,
                       style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Ask something magical...',
-                        hintStyle: TextStyle(color: Colors.grey.shade400),
-                        filled: true,
-                        fillColor: Colors.grey.shade900,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  FloatingActionButton(
-                    onPressed: _sendMessage,
-                    backgroundColor: Colors.cyanAccent,
-                    child: const Icon(Icons.send, color: Colors.black),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8.0),
+              child: CircularProgressIndicator(color: Colors.cyanAccent),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Ask something magical...',
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                      filled: true,
+                      fillColor: Colors.grey.shade900,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FloatingActionButton(
+                  onPressed: _sendMessage,
+                  backgroundColor: Colors.cyanAccent,
+                  child: const Icon(Icons.send, color: Colors.black),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    Navigator.pop(context, widget.conversation);
   }
 }
