@@ -93,7 +93,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('QueryWiz 💬', style: TextStyle(color: Colors.cyanAccent)),
+        title: Text('QueryWiz 💬', style: TextStyle(color: isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent)),
         centerTitle: true,
         backgroundColor: isDarkMode ? Colors.black54 : Colors.cyan,
         actions: [
@@ -119,7 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: msg.isUser
-                          ? (isDarkMode ? Colors.cyan.shade700 : Colors.blueAccent)
+                          ? (isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent)
                           : (isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300),
                       borderRadius: BorderRadius.circular(16),
                     ),

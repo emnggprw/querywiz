@@ -42,13 +42,26 @@ class _HomeScreenState extends State<HomeScreen> {
     ).then((_) => setState(() {}));
   }
 
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return "Today • ${TimeOfDay.fromDateTime(date).format(context)}";
+    } else if (difference.inDays == 1) {
+      return "Yesterday • ${TimeOfDay.fromDateTime(date).format(context)}";
+    } else {
+      return "${date.toLocal().toString().split(' ')[0]}";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('QueryWiz 💬', style: TextStyle(color: Colors.cyanAccent)),
+        title: Text('QueryWiz 💬', style: TextStyle(color: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent)),
         centerTitle: true,
         backgroundColor: themeProvider.isDarkMode ? Colors.black54 : Colors.cyan,
         actions: [
@@ -59,25 +72,55 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: ListView.builder(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         itemCount: _conversations.length,
         itemBuilder: (context, index) {
           final conversation = _conversations[index];
-          final lastMessage = conversation.messages.isNotEmpty ? conversation.messages.last.text : "New conversation";
-          return Card(
-            color: themeProvider.isDarkMode ? Colors.grey.shade900 : Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: ListTile(
-              title: Text(
-                lastMessage,
-                style: TextStyle(color: themeProvider.isDarkMode ? Colors.white : Colors.black),
-                overflow: TextOverflow.ellipsis,
+          final lastMessage = conversation.messages.isNotEmpty
+              ? conversation.messages.last.text
+              : "Start a new conversation";
+
+          return GestureDetector(
+            onTap: () => _openConversation(index),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: themeProvider.isDarkMode ? Colors.black.withOpacity(0.6) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: themeProvider.isDarkMode ? Colors.black54 : Colors.grey.withOpacity(0.2),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                    offset: const Offset(2, 4),
+                  ),
+                ],
               ),
-              subtitle: Text(
-                conversation.lastUpdated.toLocal().toString(),
-                style: TextStyle(color: themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.black54, fontSize: 12),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                leading: CircleAvatar(
+                  backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
+                  child: const Icon(Icons.chat, color: Colors.black),
+                ),
+                title: Text(
+                  lastMessage,
+                  style: TextStyle(
+                    color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  _formatDate(conversation.lastUpdated), // Helper function for better date formatting
+                  style: TextStyle(
+                    color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.black54,
+                    fontSize: 13,
+                  ),
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
               ),
-              onTap: () => _openConversation(index),
             ),
           );
         },
