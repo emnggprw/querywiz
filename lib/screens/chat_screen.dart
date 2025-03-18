@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'package:querywiz/main.dart';
 import 'package:querywiz/models/conversation.dart';
 import 'package:querywiz/models/message.dart';
 
@@ -18,7 +20,6 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
-  bool _isDarkMode = true;
 
   final String apiUrl = "https://api.example.com/chat";
   final String apiKey = "your_api_key_here";
@@ -32,11 +33,16 @@ class _ChatScreenState extends State<ChatScreen> {
       _isLoading = true;
     });
     _controller.clear();
+    _scrollToBottom();
 
     try {
       final response = await _fetchResponse(message);
       setState(() {
-        widget.conversation.messages.add(Message(text: response ?? 'No response received.', isUser: false, timestamp: DateTime.now()));
+        widget.conversation.messages.add(Message(
+          text: response ?? 'No response received.',
+          isUser: false,
+          timestamp: DateTime.now(),
+        ));
       });
     } catch (e) {
       Fluttertoast.showToast(msg: "Error: $e", backgroundColor: Colors.red);
@@ -59,11 +65,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data.containsKey('response')) {
-          return data['response'];
-        } else {
-          return 'Unexpected response format.';
-        }
+        return data['response'] ?? 'Unexpected response format.';
       } else {
         return 'Error: ${response.statusCode} - ${response.reasonPhrase}';
       }
@@ -74,29 +76,30 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 300), () {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     });
-  }
-
-  void _toggleTheme() {
-    setState(() => _isDarkMode = !_isDarkMode);
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final bool isDarkMode = themeProvider.isDarkMode;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('QueryWiz 💬', style: TextStyle(color: Colors.cyanAccent)),
         centerTitle: true,
-        backgroundColor: Colors.black54,
+        backgroundColor: isDarkMode ? Colors.black54 : Colors.cyan,
         actions: [
           IconButton(
-            icon: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode),
-            onPressed: _toggleTheme,
+            icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            onPressed: themeProvider.toggleTheme,
           ),
         ],
       ),
@@ -115,12 +118,14 @@ class _ChatScreenState extends State<ChatScreen> {
                     margin: const EdgeInsets.symmetric(vertical: 5),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: msg.isUser ? Colors.cyan.shade700 : Colors.grey.shade800,
+                      color: msg.isUser
+                          ? (isDarkMode ? Colors.cyan.shade700 : Colors.blueAccent)
+                          : (isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
                       msg.text,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
                     ),
                   ),
                 );
@@ -139,12 +144,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
                     decoration: InputDecoration(
                       hintText: 'Ask something magical...',
-                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                      hintStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700),
                       filled: true,
-                      fillColor: Colors.grey.shade900,
+                      fillColor: isDarkMode ? Colors.grey.shade900 : Colors.grey.shade200,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
@@ -165,11 +170,5 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    Navigator.pop(context, widget.conversation);
   }
 }

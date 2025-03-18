@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:querywiz/main.dart';
 import 'package:querywiz/models/conversation.dart';
 import 'package:querywiz/models/message.dart';
 import 'package:querywiz/screens/chat_screen.dart';
@@ -42,11 +44,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('QueryWiz 💬', style: TextStyle(color: Colors.cyanAccent)),
         centerTitle: true,
-        backgroundColor: Colors.black54,
+        backgroundColor: themeProvider.isDarkMode ? Colors.black54 : Colors.cyan,
+        actions: [
+          IconButton(
+            icon: Icon(themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            onPressed: () => themeProvider.toggleTheme(),
+          ),
+        ],
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(10),
@@ -55,17 +65,17 @@ class _HomeScreenState extends State<HomeScreen> {
           final conversation = _conversations[index];
           final lastMessage = conversation.messages.isNotEmpty ? conversation.messages.last.text : "New conversation";
           return Card(
-            color: Colors.grey.shade900,
+            color: themeProvider.isDarkMode ? Colors.grey.shade900 : Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: ListTile(
               title: Text(
                 lastMessage,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: themeProvider.isDarkMode ? Colors.white : Colors.black),
                 overflow: TextOverflow.ellipsis,
               ),
               subtitle: Text(
                 conversation.lastUpdated.toLocal().toString(),
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                style: TextStyle(color: themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.black54, fontSize: 12),
               ),
               onTap: () => _openConversation(index),
             ),
