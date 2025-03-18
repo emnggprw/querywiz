@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:querywiz/screens/chat_screen.dart';
+import 'package:querywiz/screens/home_screen.dart';
 
 class QueryWizApp extends StatelessWidget {
   const QueryWizApp({super.key});
@@ -12,7 +12,7 @@ class QueryWizApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.cyan),
         scaffoldBackgroundColor: Colors.black,
       ),
-      home: const ChatScreen(),
+      home: const HomeScreen(),
     );
   }
 }
