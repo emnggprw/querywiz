@@ -133,9 +133,16 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8.0),
-              child: CircularProgressIndicator(color: Colors.cyanAccent),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                'QueryWiz is thinking...',
+                style: TextStyle(
+                  color: isDarkMode ? Colors.cyanAccent : Colors.black,
+                  fontStyle: FontStyle.italic,
+                  fontSize: 16,
+                ),
+              ),
             ),
           Padding(
             padding: const EdgeInsets.all(8.0),
