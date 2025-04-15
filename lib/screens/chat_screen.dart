@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:querywiz/main.dart';
 import 'package:querywiz/models/conversation.dart';
 import 'package:querywiz/models/message.dart';
+import 'package:chat_bubbles/chat_bubbles.dart'; // Import the chat_bubbles package
 
 class ChatScreen extends StatefulWidget {
   final Conversation conversation;
@@ -22,7 +23,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoading = false;
 
   final String apiUrl = "https://api.example.com/chat";
-  final String apiKey = "your_api_key_here";
+  final String apiKey = "api_from_env_here";
 
   Future<void> _sendMessage() async {
     final message = _controller.text.trim();
@@ -112,22 +113,14 @@ class _ChatScreenState extends State<ChatScreen> {
               itemCount: widget.conversation.messages.length,
               itemBuilder: (context, index) {
                 final msg = widget.conversation.messages[index];
-                return Align(
-                  alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 5),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: msg.isUser
-                          ? (isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent)
-                          : (isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      msg.text,
-                      style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
-                    ),
-                  ),
+                return BubbleNormal(
+                  text: msg.text,
+                  isSender: msg.isUser,
+                  color: msg.isUser
+                      ? (isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent)
+                      : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300),
+                  tail: true,
+                  textStyle: TextStyle(color: isDarkMode ? Colors.white : Colors.black ),
                 );
               },
             ),
