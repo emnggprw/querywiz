@@ -119,7 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: msg.isUser
                       ? (isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent)
                       : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300),
-                  tail: true,
+                  tail: true, // chat bubble tail
                   textStyle: TextStyle(color: isDarkMode ? Colors.white : Colors.black ),
                 );
               },
