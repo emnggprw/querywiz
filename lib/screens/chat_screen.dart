@@ -6,7 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:querywiz/main.dart';
 import 'package:querywiz/models/conversation.dart';
 import 'package:querywiz/models/message.dart';
-import 'package:chat_bubbles/chat_bubbles.dart'; // Import the chat_bubbles package
+import 'package:chat_bubbles/chat_bubbles.dart';
+import 'dart:async'; // Needed for Timer
 
 class ChatScreen extends StatefulWidget {
   final Conversation conversation;
@@ -25,30 +26,67 @@ class _ChatScreenState extends State<ChatScreen> {
   final String apiUrl = "https://api.example.com/chat";
   final String apiKey = "api_from_env_here";
 
+  // Animation variables
+  String _typingIndicator = 'QueryWiz is typing';
+  Timer? _typingTimer;
+  int _dotCount = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    _typingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startTypingAnimation() {
+    _typingTimer?.cancel(); // In case it's already running
+    _dotCount = 0;
+    _typingTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      setState(() {
+        _dotCount = (_dotCount + 1) % 4;
+        _typingIndicator = 'QueryWiz is typing${'.' * _dotCount}';
+      });
+    });
+  }
+
+  void _stopTypingAnimation() {
+    _typingTimer?.cancel();
+    setState(() {
+      _typingIndicator = '';
+    });
+  }
+
   Future<void> _sendMessage() async {
     final message = _controller.text.trim();
     if (message.isEmpty) return;
 
     setState(() {
-      widget.conversation.messages.add(Message(text: message, isUser: true, timestamp: DateTime.now()));
+      widget.conversation.messages.add(
+        Message(text: message, isUser: true, timestamp: DateTime.now()),
+      );
       _isLoading = true;
     });
     _controller.clear();
     _scrollToBottom();
+    _startTypingAnimation();
 
     try {
       final response = await _fetchResponse(message);
       setState(() {
-        widget.conversation.messages.add(Message(
-          text: response ?? 'No response received.',
-          isUser: false,
-          timestamp: DateTime.now(),
-        ));
+        widget.conversation.messages.add(
+          Message(
+            text: response ?? 'No response received.',
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
       });
     } catch (e) {
       Fluttertoast.showToast(msg: "Error: $e", backgroundColor: Colors.red);
     } finally {
       setState(() => _isLoading = false);
+      _stopTypingAnimation();
       _scrollToBottom();
     }
   }
@@ -94,7 +132,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('QueryWiz 💬', style: TextStyle(color: isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent)),
+        title: Text(
+          'QueryWiz 💬',
+          style: TextStyle(
+            color: isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
+          ),
+        ),
         centerTitle: true,
         backgroundColor: isDarkMode ? Colors.black54 : Colors.cyan,
         actions: [
@@ -119,8 +162,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: msg.isUser
                       ? (isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent)
                       : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300),
-                  tail: true, // chat bubble tail
-                  textStyle: TextStyle(color: isDarkMode ? Colors.white : Colors.black ),
+                  tail: true,
+                  textStyle: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
                 );
               },
             ),
@@ -129,7 +172,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Text(
-                'QueryWiz is thinking...',
+                _typingIndicator,
                 style: TextStyle(
                   color: isDarkMode ? Colors.cyanAccent : Colors.black,
                   fontStyle: FontStyle.italic,
@@ -147,7 +190,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
                     decoration: InputDecoration(
                       hintText: 'Ask something magical...',
-                      hintStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700),
+                      hintStyle: TextStyle(
+                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+                      ),
                       filled: true,
                       fillColor: isDarkMode ? Colors.grey.shade900 : Colors.grey.shade200,
                       border: OutlineInputBorder(
