@@ -7,7 +7,7 @@ import 'package:querywiz/main.dart';
 import 'package:querywiz/models/conversation.dart';
 import 'package:querywiz/models/message.dart';
 import 'package:chat_bubbles/chat_bubbles.dart';
-import 'dart:async'; // Needed for Timer
+import 'dart:async';
 
 class ChatScreen extends StatefulWidget {
   final Conversation conversation;
@@ -18,15 +18,17 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+
   bool _isLoading = false;
 
   final String apiUrl = "https://api.example.com/chat";
   final String apiKey = "api_from_env_here";
 
-  // Animation variables
+  // Typing animation
   String _typingIndicator = 'QueryWiz is typing';
   Timer? _typingTimer;
   int _dotCount = 0;
@@ -40,7 +42,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _startTypingAnimation() {
-    _typingTimer?.cancel(); // In case it's already running
+    _typingTimer?.cancel();
     _dotCount = 0;
     _typingTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       setState(() {
@@ -57,31 +59,34 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  void _insertMessage(Message msg) {
+    widget.conversation.messages.add(msg);
+    _listKey.currentState?.insertItem(widget.conversation.messages.length - 1);
+  }
+
   Future<void> _sendMessage() async {
     final message = _controller.text.trim();
     if (message.isEmpty) return;
 
+    final userMsg = Message(text: message, isUser: true, timestamp: DateTime.now());
+
     setState(() {
-      widget.conversation.messages.add(
-        Message(text: message, isUser: true, timestamp: DateTime.now()),
-      );
       _isLoading = true;
     });
+
     _controller.clear();
+    _insertMessage(userMsg);
     _scrollToBottom();
     _startTypingAnimation();
 
     try {
       final response = await _fetchResponse(message);
-      setState(() {
-        widget.conversation.messages.add(
-          Message(
-            text: response ?? 'No response received.',
-            isUser: false,
-            timestamp: DateTime.now(),
-          ),
-        );
-      });
+      final botMsg = Message(
+        text: response ?? 'No response received.',
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
+      _insertMessage(botMsg);
     } catch (e) {
       Fluttertoast.showToast(msg: "Error: $e", backgroundColor: Colors.red);
     } finally {
@@ -150,13 +155,15 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
+            child: AnimatedList(
+              key: _listKey,
               controller: _scrollController,
               padding: const EdgeInsets.all(10),
-              itemCount: widget.conversation.messages.length,
-              itemBuilder: (context, index) {
+              initialItemCount: widget.conversation.messages.length,
+              itemBuilder: (context, index, animation) {
                 final msg = widget.conversation.messages[index];
-                return BubbleNormal(
+
+                final bubble = BubbleNormal(
                   text: msg.text,
                   isSender: msg.isUser,
                   color: msg.isUser
@@ -164,6 +171,19 @@ class _ChatScreenState extends State<ChatScreen> {
                       : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300),
                   tail: true,
                   textStyle: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                );
+
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.3),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                  ),
+                  child: FadeTransition(
+                    opacity: animation,
+                    child: bubble,
+                  ),
                 );
               },
             ),
