@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:querywiz/main.dart';
+import 'package:querywiz/data/theme_provider.dart';
 import 'package:querywiz/models/conversation.dart';
 import 'package:querywiz/models/message.dart';
 import 'package:querywiz/screens/chat_screen.dart';

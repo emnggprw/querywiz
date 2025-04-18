@@ -3,7 +3,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import 'package:querywiz/main.dart';
+import 'package:querywiz/data/theme_provider.dart';
 import 'package:querywiz/models/conversation.dart';
 import 'package:querywiz/models/message.dart';
 import 'package:chat_bubbles/chat_bubbles.dart';
