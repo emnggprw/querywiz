@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -26,7 +27,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   bool _isLoading = false;
 
   final String apiUrl = "https://api.example.com/chat";
-  final String apiKey = "api_from_env_here";
+  final apiKey = dotenv.env['API_KEY'];
 
   // Typing animation
   String _typingIndicator = 'QueryWiz is typing';
