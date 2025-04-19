@@ -42,6 +42,20 @@ class _HomeScreenState extends State<HomeScreen> {
     ).then((_) => setState(() {}));
   }
 
+  // Method to get the timestamp of the most recent message in a conversation
+  DateTime _getMostRecentMessageTimestamp(Conversation conversation) {
+    if (conversation.messages.isEmpty) {
+      return DateTime.now(); // Return current time if there are no messages
+    }
+    // Return the timestamp of the most recent message
+    return conversation.messages.reduce((a, b) => a.timestamp.isAfter(b.timestamp) ? a : b).timestamp;
+  }
+
+  // Method to sort conversations by the most recent message timestamp
+  void _sortConversationsByTimestamp() {
+    _conversations.sort((a, b) => _getMostRecentMessageTimestamp(b).compareTo(_getMostRecentMessageTimestamp(a)));  // Sort in descending order
+  }
+
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
@@ -71,59 +85,93 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        itemCount: _conversations.length,
-        itemBuilder: (context, index) {
-          final conversation = _conversations[index];
-          final lastMessage = conversation.messages.isNotEmpty
-              ? conversation.messages.last.text
-              : "Start a new conversation";
-
-          return GestureDetector(
-            onTap: () => _openConversation(index),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: themeProvider.isDarkMode ? Colors.black.withOpacity(0.6) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: themeProvider.isDarkMode ? Colors.black54 : Colors.grey.withOpacity(0.2),
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                    offset: const Offset(2, 4),
-                  ),
-                ],
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                leading: CircleAvatar(
-                  backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
-                  child: const Icon(Icons.chat, color: Colors.black),
-                ),
-                title: Text(
-                  lastMessage,
-                  style: TextStyle(
+      body: Column(
+        children: [
+          // Row for the Sort button and other potential buttons
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              children: [
+                ElevatedButton.icon(
+                  icon: Icon(Icons.sort, color: themeProvider.isDarkMode ? Colors.white : Colors.black,),
+                  label: Text("Sort", style:  TextStyle(
                     color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
+                  ),),
+                  onPressed: () {
+                    setState(() {
+                      _sortConversationsByTimestamp();  // Sort conversations when button is pressed
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent, // Corrected line
+                    foregroundColor: Colors.white, // Use foregroundColor instead of onPrimary
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                subtitle: Text(
-                  _formatDate(conversation.lastUpdated), // Helper function for better date formatting
-                  style: TextStyle(
-                    color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.black54,
-                    fontSize: 13,
-                  ),
-                ),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
-              ),
+
+                // Add more buttons here if needed in the future
+              ],
             ),
-          );
-        },
+          ),
+
+          // ListView of conversations
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              itemCount: _conversations.length,
+              itemBuilder: (context, index) {
+                final conversation = _conversations[index];
+                final lastMessage = conversation.messages.isNotEmpty
+                    ? conversation.messages.last.text
+                    : "Start a new conversation";
+
+                return GestureDetector(
+                  onTap: () => _openConversation(index),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: themeProvider.isDarkMode ? Colors.black.withOpacity(0.6) : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: themeProvider.isDarkMode ? Colors.black54 : Colors.grey.withOpacity(0.2),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                          offset: const Offset(2, 4),
+                        ),
+                      ],
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      leading: CircleAvatar(
+                        backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
+                        child: const Icon(Icons.chat, color: Colors.black),
+                      ),
+                      title: Text(
+                        lastMessage,
+                        style: TextStyle(
+                          color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        _formatDate(_getMostRecentMessageTimestamp(conversation)), // Display the most recent message's timestamp
+                        style: TextStyle(
+                          color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.black54,
+                          fontSize: 13,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _startNewConversation,
