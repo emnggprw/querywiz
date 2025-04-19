@@ -14,14 +14,20 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final List<Conversation> _conversations = [
-    Conversation(messages: [
-      Message(text: "Hello!", isUser: true, timestamp: DateTime.now().subtract(const Duration(minutes: 5))),
-      Message(text: "Hi there! How can I assist you?", isUser: false, timestamp: DateTime.now().subtract(const Duration(minutes: 4))),
-    ]),
-    Conversation(messages: [
-      Message(text: "What's the weather today?", isUser: true, timestamp: DateTime.now().subtract(const Duration(hours: 1))),
-      Message(text: "It's sunny and 75°F.", isUser: false, timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 2))),
-    ]),
+    Conversation(
+      messages: [
+        Message(text: "Hello!", isUser: true, timestamp: DateTime.now().subtract(const Duration(minutes: 5))),
+        Message(text: "Hi there! How can I assist you?", isUser: false, timestamp: DateTime.now().subtract(const Duration(minutes: 4))),
+      ],
+      isFavorite: false,
+    ),
+    Conversation(
+      messages: [
+        Message(text: "What's the weather today?", isUser: true, timestamp: DateTime.now().subtract(const Duration(hours: 1))),
+        Message(text: "It's sunny and 75°F.", isUser: false, timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 2))),
+      ],
+      isFavorite: false,
+    ),
   ];
 
   void _startNewConversation() {
@@ -42,18 +48,36 @@ class _HomeScreenState extends State<HomeScreen> {
     ).then((_) => setState(() {}));
   }
 
-  // Method to get the timestamp of the most recent message in a conversation
-  DateTime _getMostRecentMessageTimestamp(Conversation conversation) {
-    if (conversation.messages.isEmpty) {
-      return DateTime.now(); // Return current time if there are no messages
-    }
-    // Return the timestamp of the most recent message
-    return conversation.messages.reduce((a, b) => a.timestamp.isAfter(b.timestamp) ? a : b).timestamp;
+  void _toggleFavorite(int index) {
+    setState(() {
+      _conversations[index].isFavorite = !_conversations[index].isFavorite;
+    });
   }
 
-  // Method to sort conversations by the most recent message timestamp
-  void _sortConversationsByTimestamp() {
-    _conversations.sort((a, b) => _getMostRecentMessageTimestamp(b).compareTo(_getMostRecentMessageTimestamp(a)));  // Sort in descending order
+  void _sortByTimestamp() {
+    setState(() {
+      _conversations.sort((a, b) {
+        // Sorting conversations based on timestamp of the last message
+        DateTime aTimestamp = a.messages.isNotEmpty ? a.messages.last.timestamp : DateTime.now();
+        DateTime bTimestamp = b.messages.isNotEmpty ? b.messages.last.timestamp : DateTime.now();
+        return bTimestamp.compareTo(aTimestamp); // Descending order
+      });
+    });
+  }
+
+  void _sortByFavorite() {
+    setState(() {
+      _conversations.sort((a, b) {
+        // Sorting conversations based on favorite status
+        if (a.isFavorite && !b.isFavorite) {
+          return -1; // a is favorite, b is not
+        } else if (!a.isFavorite && b.isFavorite) {
+          return 1; // b is favorite, a is not
+        } else {
+          return 0; // Both are either favorite or not
+        }
+      });
+    });
   }
 
   String _formatDate(DateTime date) {
@@ -87,34 +111,50 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
-          // Row for the Sort button and other potential buttons
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
                 ElevatedButton.icon(
-                  icon: Icon(Icons.sort, color: themeProvider.isDarkMode ? Colors.white : Colors.black,),
-                  label: Text("Sort", style:  TextStyle(
+                  icon: Icon(
+                    Icons.access_time,
                     color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                  ),),
-                  onPressed: () {
-                    setState(() {
-                      _sortConversationsByTimestamp();  // Sort conversations when button is pressed
-                    });
-                  },
+                  ),
+                  label: Text(
+                    "Recent",
+                    style: TextStyle(
+                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  onPressed: _sortByTimestamp,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent, // Corrected line
-                    foregroundColor: Colors.white, // Use foregroundColor instead of onPrimary
+                    backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
-
-                // Add more buttons here if needed in the future
+                const SizedBox(width: 10),
+                ElevatedButton.icon(
+                  icon: Icon(
+                    Icons.star,
+                    color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                  ),
+                  label: Text(
+                    "Favorites",
+                    style: TextStyle(
+                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  onPressed: _sortByFavorite,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
               ],
             ),
           ),
-
-          // ListView of conversations
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -158,13 +198,25 @@ class _HomeScreenState extends State<HomeScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: Text(
-                        _formatDate(_getMostRecentMessageTimestamp(conversation)), // Display the most recent message's timestamp
+                        _formatDate(conversation.lastUpdated),
                         style: TextStyle(
                           color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.black54,
                           fontSize: 13,
                         ),
                       ),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              conversation.isFavorite ? Icons.star : Icons.star_border,
+                              color: conversation.isFavorite ? Colors.amber : Colors.grey,
+                            ),
+                            onPressed: () => _toggleFavorite(index),
+                          ),
+                          const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                        ],
+                      ),
                     ),
                   ),
                 );
