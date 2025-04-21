@@ -36,7 +36,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _conversations.add(Conversation(messages: []));
     });
 
-    // Navigate immediately to the newly created conversation
     _openConversation(_conversations.length - 1);
   }
 
@@ -113,23 +112,29 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
-                ElevatedButton.icon(
-                  icon: Icon(Icons.access_time, color: themeProvider.isDarkMode ? Colors.white : Colors.black),
-                  label: Text("Recent", style: TextStyle(color: themeProvider.isDarkMode ? Colors.white : Colors.black)),
-                  onPressed: _sortByTimestamp,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                TapFeedbackWrapper(
+                  onTap: _sortByTimestamp,
+                  child: ElevatedButton.icon(
+                    icon: Icon(Icons.access_time, color: themeProvider.isDarkMode ? Colors.white : Colors.black),
+                    label: Text("Recent", style: TextStyle(color: themeProvider.isDarkMode ? Colors.white : Colors.black)),
+                    onPressed: null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
-                ElevatedButton.icon(
-                  icon: Icon(Icons.star, color: themeProvider.isDarkMode ? Colors.white : Colors.black),
-                  label: Text("Favorites", style: TextStyle(color: themeProvider.isDarkMode ? Colors.white : Colors.black)),
-                  onPressed: _sortByFavorite,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                TapFeedbackWrapper(
+                  onTap: _sortByFavorite,
+                  child: ElevatedButton.icon(
+                    icon: Icon(Icons.star, color: themeProvider.isDarkMode ? Colors.white : Colors.black),
+                    label: Text("Favorites", style: TextStyle(color: themeProvider.isDarkMode ? Colors.white : Colors.black)),
+                    onPressed: null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
                 ),
               ],
