@@ -5,7 +5,7 @@ import 'package:querywiz/models/conversation.dart';
 import 'package:querywiz/models/message.dart';
 import 'package:querywiz/screens/chat_screen.dart';
 import 'package:querywiz/widgets/tap_feedback_wrapper.dart';
-import 'package:querywiz/widgets/smooth_scroll_wrapper.dart'; // NEW IMPORT
+import 'package:querywiz/widgets/smooth_scroll_wrapper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,6 +15,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final ScrollController _scrollController = ScrollController();
+
   final List<Conversation> _conversations = [
     Conversation(
       messages: [
@@ -89,6 +91,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
@@ -143,7 +151,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Expanded(
             child: SmoothScrollWrapper(
+              controller: _scrollController,
               child: ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 itemCount: _conversations.length,
                 itemBuilder: (context, index) {
