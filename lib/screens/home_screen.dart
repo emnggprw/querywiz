@@ -77,6 +77,42 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _deleteConversation(int index) {
+    setState(() {
+      _conversations.removeAt(index);
+    });
+  }
+
+  Future<bool> _confirmAction(String title, String content, IconData icon, Color iconColor) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(icon, color: iconColor),
+              const SizedBox(width: 10),
+              Text(title),
+            ],
+          ),
+          content: Text(content),
+          actions: [
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: iconColor),
+              child: const Text("Confirm", style: TextStyle(color: Colors.white)),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    ) ??
+        false;
+  }
+
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
@@ -162,57 +198,97 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? conversation.messages.last.text
                       : "Start a new conversation";
 
-                  return TapFeedbackWrapper(
-                    onTap: () => _openConversation(index),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: themeProvider.isDarkMode ? Colors.black.withOpacity(0.6) : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: themeProvider.isDarkMode ? Colors.black54 : Colors.grey.withOpacity(0.2),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                            offset: const Offset(2, 4),
-                          ),
-                        ],
-                      ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        leading: CircleAvatar(
-                          backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
-                          child: const Icon(Icons.chat, color: Colors.black),
-                        ),
-                        title: Text(
-                          lastMessage,
-                          style: TextStyle(
-                            color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(
-                          _formatDate(conversation.lastUpdated),
-                          style: TextStyle(
-                            color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.black54,
-                            fontSize: 13,
-                          ),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(
-                                conversation.isFavorite ? Icons.star : Icons.star_border,
-                                color: conversation.isFavorite ? Colors.amber : Colors.grey,
-                              ),
-                              onPressed: () => _toggleFavorite(index),
+                  return Dismissible(
+                    key: UniqueKey(),
+                    direction: DismissDirection.horizontal,
+                    confirmDismiss: (direction) async {
+                      if (direction == DismissDirection.startToEnd) {
+                        return await _confirmAction(
+                          "Favorite Conversation",
+                          "Are you sure you want to toggle favorite status?",
+                          Icons.star,
+                          Colors.amber,
+                        ).then((confirmed) {
+                          if (confirmed) _toggleFavorite(index);
+                          return false; // prevent dismiss to keep the widget
+                        });
+                      } else if (direction == DismissDirection.endToStart) {
+                        return await _confirmAction(
+                          "Delete Conversation",
+                          "Are you sure you want to delete this conversation?",
+                          Icons.delete,
+                          Colors.red,
+                        ).then((confirmed) {
+                          if (confirmed) _deleteConversation(index);
+                          return false; // prevent dismiss to keep the widget
+                        });
+                      }
+                      return false;
+                    },
+                    background: Container(
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.only(left: 20),
+                      color: Colors.amber,
+                      child: const Icon(Icons.star, color: Colors.white),
+                    ),
+                    secondaryBackground: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 20),
+                      color: Colors.red,
+                      child: const Icon(Icons.delete, color: Colors.white),
+                    ),
+                    child: GestureDetector(
+                      onTap: () => _openConversation(index),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: themeProvider.isDarkMode ? Colors.black.withOpacity(0.6) : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: themeProvider.isDarkMode ? Colors.black54 : Colors.grey.withOpacity(0.2),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                              offset: const Offset(2, 4),
                             ),
-                            const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
                           ],
+                        ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          leading: CircleAvatar(
+                            backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
+                            child: const Icon(Icons.chat, color: Colors.black),
+                          ),
+                          title: Text(
+                            lastMessage,
+                            style: TextStyle(
+                              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            _formatDate(conversation.lastUpdated),
+                            style: TextStyle(
+                              color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.black54,
+                              fontSize: 13,
+                            ),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  conversation.isFavorite ? Icons.star : Icons.star_border,
+                                  color: conversation.isFavorite ? Colors.amber : Colors.grey,
+                                ),
+                                onPressed: () => _toggleFavorite(index),
+                              ),
+                              const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                            ],
+                          ),
                         ),
                       ),
                     ),
