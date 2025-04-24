@@ -6,6 +6,7 @@ import 'package:querywiz/models/message.dart';
 import 'package:querywiz/screens/chat_screen.dart';
 import 'package:querywiz/widgets/tap_feedback_wrapper.dart';
 import 'package:querywiz/widgets/smooth_scroll_wrapper.dart';
+import 'package:querywiz/widgets/confirmation_dialog.dart'; // Imported reusable dialog
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -38,7 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _conversations.add(Conversation(messages: []));
     });
-
     _openConversation(_conversations.length - 1);
   }
 
@@ -81,36 +81,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _conversations.removeAt(index);
     });
-  }
-
-  Future<bool> _confirmAction(String title, String content, IconData icon, Color iconColor) async {
-    return await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(icon, color: iconColor),
-              const SizedBox(width: 10),
-              Text(title),
-            ],
-          ),
-          content: Text(content),
-          actions: [
-            TextButton(
-              child: const Text("Cancel"),
-              onPressed: () => Navigator.of(context).pop(false),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: iconColor),
-              child: const Text("Confirm", style: TextStyle(color: Colors.white)),
-              onPressed: () => Navigator.of(context).pop(true),
-            ),
-          ],
-        );
-      },
-    ) ??
-        false;
   }
 
   String _formatDate(DateTime date) {
@@ -203,24 +173,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     direction: DismissDirection.horizontal,
                     confirmDismiss: (direction) async {
                       if (direction == DismissDirection.startToEnd) {
-                        return await _confirmAction(
-                          "Favorite Conversation",
-                          "Are you sure you want to toggle favorite status?",
-                          Icons.star,
-                          Colors.amber,
+                        return await ConfirmationDialog.show(
+                          context: context,
+                          title: "Favorite Conversation",
+                          content: "Are you sure you want to toggle favorite status?",
+                          icon: Icons.star,
+                          iconColor: Colors.amber,
                         ).then((confirmed) {
                           if (confirmed) _toggleFavorite(index);
-                          return false; // prevent dismiss to keep the widget
+                          return false;
                         });
                       } else if (direction == DismissDirection.endToStart) {
-                        return await _confirmAction(
-                          "Delete Conversation",
-                          "Are you sure you want to delete this conversation?",
-                          Icons.delete,
-                          Colors.red,
+                        return await ConfirmationDialog.show(
+                          context: context,
+                          title: "Delete Conversation",
+                          content: "Are you sure you want to delete this conversation?",
+                          icon: Icons.delete,
+                          iconColor: Colors.red,
                         ).then((confirmed) {
                           if (confirmed) _deleteConversation(index);
-                          return false; // prevent dismiss to keep the widget
+                          return false;
                         });
                       }
                       return false;
