@@ -12,4 +12,10 @@ class Conversation {
     messages.add(message);
     lastUpdated = message.timestamp;
   }
+
+  static void deleteConversationAt(List<Conversation> list, int index) {
+    if (index >= 0 && index < list.length) {
+      list.removeAt(index);
+    }
+  }
 }

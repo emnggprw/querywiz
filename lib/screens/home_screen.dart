@@ -6,7 +6,7 @@ import 'package:querywiz/models/message.dart';
 import 'package:querywiz/screens/chat_screen.dart';
 import 'package:querywiz/widgets/tap_feedback_wrapper.dart';
 import 'package:querywiz/widgets/smooth_scroll_wrapper.dart';
-import 'package:querywiz/widgets/confirmation_dialog.dart'; // Imported reusable dialog
+import 'package:querywiz/widgets/confirmation_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -79,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _deleteConversation(int index) {
     setState(() {
-      _conversations.removeAt(index);
+      Conversation.deleteConversationAt(_conversations, index);
     });
   }
 
