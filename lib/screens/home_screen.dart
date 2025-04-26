@@ -7,6 +7,7 @@ import 'package:querywiz/screens/chat_screen.dart';
 import 'package:querywiz/widgets/tap_feedback_wrapper.dart';
 import 'package:querywiz/widgets/smooth_scroll_wrapper.dart';
 import 'package:querywiz/widgets/confirmation_dialog.dart';
+import 'package:querywiz/utils/empty_state_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -156,7 +157,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Expanded(
-            child: SmoothScrollWrapper(
+            child: _conversations.isEmpty
+                ? EmptyStateWidget()  // Display EmptyStateWidget if no conversations
+                : SmoothScrollWrapper(
               controller: _scrollController,
               child: ListView.builder(
                 controller: _scrollController,
