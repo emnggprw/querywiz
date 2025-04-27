@@ -20,59 +20,60 @@ class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
 
-  List<Conversation> _conversations = [];
-  List<Conversation> _filteredConversations = [];
-
   bool _isSearching = false;
+  String _searchQuery = '';
 
-  @override
-  void initState() {
-    super.initState();
-    _conversations = [
-      Conversation(
-        messages: [
-          Message(text: "Hello!", isUser: true, timestamp: DateTime.now().subtract(const Duration(minutes: 5))),
-          Message(text: "Hi there! How can I assist you?", isUser: false, timestamp: DateTime.now().subtract(const Duration(minutes: 4))),
-        ],
-        isFavorite: false,
-      ),
-      Conversation(
-        messages: [
-          Message(text: "What's the weather today?", isUser: true, timestamp: DateTime.now().subtract(const Duration(hours: 1))),
-          Message(text: "It's sunny and 75°F.", isUser: false, timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 2))),
-        ],
-        isFavorite: false,
-      ),
-    ];
-    _filteredConversations = List.from(_conversations);
+  final List<Conversation> _allConversations = [
+    Conversation(
+      messages: [
+        Message(text: "Hello!", isUser: true, timestamp: DateTime.now().subtract(const Duration(minutes: 5))),
+        Message(text: "Hi there! How can I assist you?", isUser: false, timestamp: DateTime.now().subtract(const Duration(minutes: 4))),
+      ],
+      isFavorite: false,
+    ),
+    Conversation(
+      messages: [
+        Message(text: "What's the weather today?", isUser: true, timestamp: DateTime.now().subtract(const Duration(hours: 1))),
+        Message(text: "It's sunny and 75°F.", isUser: false, timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 2))),
+      ],
+      isFavorite: false,
+    ),
+  ];
+
+  List<Conversation> get _filteredConversations {
+    if (_searchQuery.isEmpty) {
+      return _allConversations;
+    }
+    return _allConversations.where((conversation) {
+      return conversation.messages.any((message) => message.text.toLowerCase().contains(_searchQuery.toLowerCase()));
+    }).toList();
   }
 
   void _startNewConversation() {
     setState(() {
-      _conversations.add(Conversation(messages: []));
-      _filteredConversations = List.from(_conversations);
+      _allConversations.add(Conversation(messages: []));
     });
-    _openConversation(_conversations.length - 1);
+    _openConversation(_allConversations.length - 1);
   }
 
   void _openConversation(int index) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ChatScreen(conversation: _filteredConversations[index]),
+        builder: (context) => ChatScreen(conversation: _allConversations[index]),
       ),
     ).then((_) => setState(() {}));
   }
 
   void _toggleFavorite(int index) {
     setState(() {
-      _filteredConversations[index].isFavorite = !_filteredConversations[index].isFavorite;
+      _allConversations[index].isFavorite = !_allConversations[index].isFavorite;
     });
   }
 
   void _sortByTimestamp() {
     setState(() {
-      _filteredConversations.sort((a, b) {
+      _allConversations.sort((a, b) {
         DateTime aTimestamp = a.messages.isNotEmpty ? a.messages.last.timestamp : DateTime.now();
         DateTime bTimestamp = b.messages.isNotEmpty ? b.messages.last.timestamp : DateTime.now();
         return bTimestamp.compareTo(aTimestamp);
@@ -82,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _sortByFavorite() {
     setState(() {
-      _filteredConversations.sort((a, b) {
+      _allConversations.sort((a, b) {
         if (a.isFavorite && !b.isFavorite) return -1;
         if (!a.isFavorite && b.isFavorite) return 1;
         return 0;
@@ -92,8 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _deleteConversation(int index) {
     setState(() {
-      Conversation.deleteConversationAt(_filteredConversations, index);
-      _conversations.removeWhere((conversation) => !_filteredConversations.contains(conversation));
+      Conversation.deleteConversationAt(_allConversations, index);
     });
   }
 
@@ -119,17 +119,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void _stopSearch() {
     setState(() {
       _isSearching = false;
+      _searchQuery = '';
       _searchController.clear();
-      _filteredConversations = List.from(_conversations);
-    });
-  }
-
-  void _filterConversations(String query) {
-    setState(() {
-      _filteredConversations = _conversations.where((conversation) {
-        final lastMessage = conversation.messages.isNotEmpty ? conversation.messages.last.text : '';
-        return lastMessage.toLowerCase().contains(query.toLowerCase());
-      }).toList();
     });
   }
 
@@ -150,14 +141,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ? TextField(
           controller: _searchController,
           autofocus: true,
-          cursorColor: Colors.white,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'Search conversations...',
-            hintStyle: TextStyle(color: Colors.white70),
             border: InputBorder.none,
+            hintStyle: TextStyle(color: themeProvider.isDarkMode ? Colors.white70 : Colors.black54),
           ),
-          onChanged: _filterConversations,
+          style: TextStyle(color: themeProvider.isDarkMode ? Colors.white : Colors.black),
+          onChanged: (query) {
+            setState(() {
+              _searchQuery = query;
+            });
+          },
         )
             : Text(
           'QueryWiz 💬',
@@ -171,15 +165,16 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.close),
               onPressed: _stopSearch,
             )
-          else
+          else ...[
             IconButton(
               icon: const Icon(Icons.search),
               onPressed: _startSearch,
             ),
-          IconButton(
-            icon: Icon(themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode),
-            onPressed: () => themeProvider.toggleTheme(),
-          ),
+            IconButton(
+              icon: Icon(themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+              onPressed: () => themeProvider.toggleTheme(),
+            ),
+          ],
         ],
       ),
       body: Column(
@@ -243,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.star,
                           iconColor: Colors.amber,
                         ).then((confirmed) {
-                          if (confirmed) _toggleFavorite(index);
+                          if (confirmed) _toggleFavorite(_allConversations.indexOf(conversation));
                           return false;
                         });
                       } else if (direction == DismissDirection.endToStart) {
@@ -254,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.delete,
                           iconColor: Colors.red,
                         ).then((confirmed) {
-                          if (confirmed) _deleteConversation(index);
+                          if (confirmed) _deleteConversation(_allConversations.indexOf(conversation));
                           return false;
                         });
                       }
@@ -273,7 +268,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: const Icon(Icons.delete, color: Colors.white),
                     ),
                     child: GestureDetector(
-                      onTap: () => _openConversation(index),
+                      onTap: () => _openConversation(_allConversations.indexOf(conversation)),
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
@@ -319,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   conversation.isFavorite ? Icons.star : Icons.star_border,
                                   color: conversation.isFavorite ? Colors.amber : Colors.grey,
                                 ),
-                                onPressed: () => _toggleFavorite(index),
+                                onPressed: () => _toggleFavorite(_allConversations.indexOf(conversation)),
                               ),
                               const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
                             ],
