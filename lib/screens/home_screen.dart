@@ -16,14 +16,9 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
-  final TextEditingController _searchController = TextEditingController();
-
-  bool _isSearching = false;
-  String _searchQuery = '';
-
-  final List<Conversation> _allConversations = [
+  final List<Conversation> _conversations = [
     Conversation(
       messages: [
         Message(text: "Hello!", isUser: true, timestamp: DateTime.now().subtract(const Duration(minutes: 5))),
@@ -40,40 +35,75 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
   ];
 
-  List<Conversation> get _filteredConversations {
-    if (_searchQuery.isEmpty) {
-      return _allConversations;
-    }
-    return _allConversations.where((conversation) {
-      return conversation.messages.any((message) => message.text.toLowerCase().contains(_searchQuery.toLowerCase()));
-    }).toList();
+  bool _isSearching = false;
+  String _searchQuery = "";
+  late TextEditingController _searchController;
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _startSearch() {
+    setState(() {
+      _isSearching = true;
+    });
+    _animationController.forward();
+  }
+
+  void _stopSearch() {
+    setState(() {
+      _isSearching = false;
+      _searchQuery = "";
+      _searchController.clear();
+    });
+    _animationController.reverse();
   }
 
   void _startNewConversation() {
     setState(() {
-      _allConversations.add(Conversation(messages: []));
+      _conversations.add(Conversation(messages: []));
     });
-    _openConversation(_allConversations.length - 1);
+    _openConversation(_conversations.length - 1);
   }
 
   void _openConversation(int index) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ChatScreen(conversation: _allConversations[index]),
+        builder: (context) => ChatScreen(conversation: _conversations[index]),
       ),
     ).then((_) => setState(() {}));
   }
 
   void _toggleFavorite(int index) {
     setState(() {
-      _allConversations[index].isFavorite = !_allConversations[index].isFavorite;
+      _conversations[index].isFavorite = !_conversations[index].isFavorite;
     });
   }
 
   void _sortByTimestamp() {
     setState(() {
-      _allConversations.sort((a, b) {
+      _conversations.sort((a, b) {
         DateTime aTimestamp = a.messages.isNotEmpty ? a.messages.last.timestamp : DateTime.now();
         DateTime bTimestamp = b.messages.isNotEmpty ? b.messages.last.timestamp : DateTime.now();
         return bTimestamp.compareTo(aTimestamp);
@@ -83,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _sortByFavorite() {
     setState(() {
-      _allConversations.sort((a, b) {
+      _conversations.sort((a, b) {
         if (a.isFavorite && !b.isFavorite) return -1;
         if (!a.isFavorite && b.isFavorite) return 1;
         return 0;
@@ -93,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _deleteConversation(int index) {
     setState(() {
-      Conversation.deleteConversationAt(_allConversations, index);
+      Conversation.deleteConversationAt(_conversations, index);
     });
   }
 
@@ -110,25 +140,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _startSearch() {
-    setState(() {
-      _isSearching = true;
-    });
-  }
-
-  void _stopSearch() {
-    setState(() {
-      _isSearching = false;
-      _searchQuery = '';
-      _searchController.clear();
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    _searchController.dispose();
-    super.dispose();
+  List<Conversation> _filteredConversations() {
+    if (_searchQuery.isEmpty) {
+      return _conversations;
+    }
+    return _conversations.where((conversation) {
+      return conversation.messages.any((message) => message.text.toLowerCase().contains(_searchQuery.toLowerCase()));
+    }).toList();
   }
 
   @override
@@ -137,45 +155,64 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: _isSearching
-            ? TextField(
-          controller: _searchController,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: 'Search conversations...',
-            border: InputBorder.none,
-            hintStyle: TextStyle(color: themeProvider.isDarkMode ? Colors.white70 : Colors.black54),
-          ),
-          style: TextStyle(color: themeProvider.isDarkMode ? Colors.white : Colors.black),
-          onChanged: (query) {
-            setState(() {
-              _searchQuery = query;
-            });
-          },
-        )
-            : Text(
-          'QueryWiz 💬',
-          style: TextStyle(color: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent),
-        ),
-        centerTitle: true,
         backgroundColor: themeProvider.isDarkMode ? Colors.black54 : Colors.cyan,
-        actions: [
-          if (_isSearching)
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: _stopSearch,
-            )
-          else ...[
-            IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: _startSearch,
+        automaticallyImplyLeading: false,
+        title: Row(
+          children: [
+            Expanded(
+              child: AnimatedAlign(
+                duration: const Duration(milliseconds: 300),
+                alignment: _isSearching ? Alignment.centerLeft : Alignment.center,
+                child: Text(
+                  'QueryWiz 💬',
+                  style: TextStyle(
+                    color: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            SizeTransition(
+              sizeFactor: _animation,
+              axis: Axis.horizontal,
+              axisAlignment: -1,
+              child: SizedBox(
+                width: 200,
+                child: TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Search...',
+                    hintStyle: const TextStyle(color: Colors.white60),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                ),
+              ),
             ),
             IconButton(
-              icon: Icon(themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+              icon: Icon(_isSearching ? Icons.close : Icons.search, color: Colors.white),
+              onPressed: () {
+                if (_isSearching) {
+                  _stopSearch();
+                } else {
+                  _startSearch();
+                }
+              },
+            ),
+            IconButton(
+              icon: Icon(themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode, color: Colors.white),
               onPressed: () => themeProvider.toggleTheme(),
             ),
           ],
-        ],
+        ),
       ),
       body: Column(
         children: [
@@ -212,16 +249,16 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Expanded(
-            child: _filteredConversations.isEmpty
+            child: _filteredConversations().isEmpty
                 ? EmptyStateWidget()
                 : SmoothScrollWrapper(
               controller: _scrollController,
               child: ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                itemCount: _filteredConversations.length,
+                itemCount: _filteredConversations().length,
                 itemBuilder: (context, index) {
-                  final conversation = _filteredConversations[index];
+                  final conversation = _filteredConversations()[index];
                   final lastMessage = conversation.messages.isNotEmpty
                       ? conversation.messages.last.text
                       : "Start a new conversation";
@@ -238,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.star,
                           iconColor: Colors.amber,
                         ).then((confirmed) {
-                          if (confirmed) _toggleFavorite(_allConversations.indexOf(conversation));
+                          if (confirmed) _toggleFavorite(index);
                           return false;
                         });
                       } else if (direction == DismissDirection.endToStart) {
@@ -249,7 +286,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.delete,
                           iconColor: Colors.red,
                         ).then((confirmed) {
-                          if (confirmed) _deleteConversation(_allConversations.indexOf(conversation));
+                          if (confirmed) _deleteConversation(index);
                           return false;
                         });
                       }
@@ -268,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: const Icon(Icons.delete, color: Colors.white),
                     ),
                     child: GestureDetector(
-                      onTap: () => _openConversation(_allConversations.indexOf(conversation)),
+                      onTap: () => _openConversation(index),
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
@@ -314,7 +351,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   conversation.isFavorite ? Icons.star : Icons.star_border,
                                   color: conversation.isFavorite ? Colors.amber : Colors.grey,
                                 ),
-                                onPressed: () => _toggleFavorite(_allConversations.indexOf(conversation)),
+                                onPressed: () => _toggleFavorite(index),
                               ),
                               const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
                             ],
