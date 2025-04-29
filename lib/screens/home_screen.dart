@@ -149,6 +149,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }).toList();
   }
 
+  Future<void> _handleRefresh() async {
+    await Future.delayed(const Duration(seconds: 1));
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -251,116 +256,119 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           Expanded(
             child: _filteredConversations().isEmpty
                 ? EmptyStateWidget()
-                : SmoothScrollWrapper(
-              controller: _scrollController,
-              child: ListView.builder(
+                : RefreshIndicator(
+              onRefresh: _handleRefresh,
+              child: SmoothScrollWrapper(
                 controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                itemCount: _filteredConversations().length,
-                itemBuilder: (context, index) {
-                  final conversation = _filteredConversations()[index];
-                  final lastMessage = conversation.messages.isNotEmpty
-                      ? conversation.messages.last.text
-                      : "Start a new conversation";
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  itemCount: _filteredConversations().length,
+                  itemBuilder: (context, index) {
+                    final conversation = _filteredConversations()[index];
+                    final lastMessage = conversation.messages.isNotEmpty
+                        ? conversation.messages.last.text
+                        : "Start a new conversation";
 
-                  return Dismissible(
-                    key: UniqueKey(),
-                    direction: DismissDirection.horizontal,
-                    confirmDismiss: (direction) async {
-                      if (direction == DismissDirection.startToEnd) {
-                        return await ConfirmationDialog.show(
-                          context: context,
-                          title: "Favorite Conversation",
-                          content: "Are you sure you want to toggle favorite status?",
-                          icon: Icons.star,
-                          iconColor: Colors.amber,
-                        ).then((confirmed) {
-                          if (confirmed) _toggleFavorite(index);
-                          return false;
-                        });
-                      } else if (direction == DismissDirection.endToStart) {
-                        return await ConfirmationDialog.show(
-                          context: context,
-                          title: "Delete Conversation",
-                          content: "Are you sure you want to delete this conversation?",
-                          icon: Icons.delete,
-                          iconColor: Colors.red,
-                        ).then((confirmed) {
-                          if (confirmed) _deleteConversation(index);
-                          return false;
-                        });
-                      }
-                      return false;
-                    },
-                    background: Container(
-                      alignment: Alignment.centerLeft,
-                      padding: const EdgeInsets.only(left: 20),
-                      color: Colors.amber,
-                      child: const Icon(Icons.star, color: Colors.white),
-                    ),
-                    secondaryBackground: Container(
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.only(right: 20),
-                      color: Colors.red,
-                      child: const Icon(Icons.delete, color: Colors.white),
-                    ),
-                    child: GestureDetector(
-                      onTap: () => _openConversation(index),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: themeProvider.isDarkMode ? Colors.black.withOpacity(0.6) : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: themeProvider.isDarkMode ? Colors.black54 : Colors.grey.withOpacity(0.2),
-                              blurRadius: 10,
-                              spreadRadius: 2,
-                              offset: const Offset(2, 4),
-                            ),
-                          ],
-                        ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          leading: CircleAvatar(
-                            backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
-                            child: const Icon(Icons.chat, color: Colors.black),
-                          ),
-                          title: Text(
-                            lastMessage,
-                            style: TextStyle(
-                              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: Text(
-                            _formatDate(conversation.lastUpdated),
-                            style: TextStyle(
-                              color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.black54,
-                              fontSize: 13,
-                            ),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: Icon(
-                                  conversation.isFavorite ? Icons.star : Icons.star_border,
-                                  color: conversation.isFavorite ? Colors.amber : Colors.grey,
-                                ),
-                                onPressed: () => _toggleFavorite(index),
+                    return Dismissible(
+                      key: UniqueKey(),
+                      direction: DismissDirection.horizontal,
+                      confirmDismiss: (direction) async {
+                        if (direction == DismissDirection.startToEnd) {
+                          return await ConfirmationDialog.show(
+                            context: context,
+                            title: "Favorite Conversation",
+                            content: "Are you sure you want to toggle favorite status?",
+                            icon: Icons.star,
+                            iconColor: Colors.amber,
+                          ).then((confirmed) {
+                            if (confirmed) _toggleFavorite(index);
+                            return false;
+                          });
+                        } else if (direction == DismissDirection.endToStart) {
+                          return await ConfirmationDialog.show(
+                            context: context,
+                            title: "Delete Conversation",
+                            content: "Are you sure you want to delete this conversation?",
+                            icon: Icons.delete,
+                            iconColor: Colors.red,
+                          ).then((confirmed) {
+                            if (confirmed) _deleteConversation(index);
+                            return false;
+                          });
+                        }
+                        return false;
+                      },
+                      background: Container(
+                        alignment: Alignment.centerLeft,
+                        padding: const EdgeInsets.only(left: 20),
+                        color: Colors.amber,
+                        child: const Icon(Icons.star, color: Colors.white),
+                      ),
+                      secondaryBackground: Container(
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 20),
+                        color: Colors.red,
+                        child: const Icon(Icons.delete, color: Colors.white),
+                      ),
+                      child: GestureDetector(
+                        onTap: () => _openConversation(index),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: themeProvider.isDarkMode ? Colors.black.withOpacity(0.6) : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: themeProvider.isDarkMode ? Colors.black54 : Colors.grey.withOpacity(0.2),
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                                offset: const Offset(2, 4),
                               ),
-                              const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
                             ],
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            leading: CircleAvatar(
+                              backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
+                              child: const Icon(Icons.chat, color: Colors.black),
+                            ),
+                            title: Text(
+                              lastMessage,
+                              style: TextStyle(
+                                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              _formatDate(conversation.lastUpdated),
+                              style: TextStyle(
+                                color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.black54,
+                                fontSize: 13,
+                              ),
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    conversation.isFavorite ? Icons.star : Icons.star_border,
+                                    color: conversation.isFavorite ? Colors.amber : Colors.grey,
+                                  ),
+                                  onPressed: () => _toggleFavorite(index),
+                                ),
+                                const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ),
