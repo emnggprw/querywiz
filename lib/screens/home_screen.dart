@@ -205,11 +205,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             IconButton(
               icon: Icon(_isSearching ? Icons.close : Icons.search, color: Colors.white),
               onPressed: () {
-                if (_isSearching) {
-                  _stopSearch();
-                } else {
-                  _startSearch();
-                }
+                _isSearching ? _stopSearch() : _startSearch();
               },
             ),
             IconButton(
@@ -303,13 +299,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         alignment: Alignment.centerLeft,
                         padding: const EdgeInsets.only(left: 20),
                         color: Colors.amber,
-                        child: const Icon(Icons.star, color: Colors.white),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.star, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text('Favorite', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
                       ),
                       secondaryBackground: Container(
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 20),
                         color: Colors.red,
-                        child: const Icon(Icons.delete, color: Colors.white),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: const [
+                            Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            SizedBox(width: 8),
+                            Icon(Icons.delete, color: Colors.white),
+                          ],
+                        ),
                       ),
                       child: GestureDetector(
                         onTap: () => _openConversation(index),
