@@ -154,6 +154,34 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     setState(() {});
   }
 
+  TextSpan _highlightMatch(String text, String query, TextStyle normalStyle, TextStyle highlightStyle) {
+    if (query.isEmpty) return TextSpan(text: text, style: normalStyle);
+
+    final matches = RegExp(RegExp.escape(query), caseSensitive: false).allMatches(text);
+
+    if (matches.isEmpty) {
+      return TextSpan(text: text, style: normalStyle);
+    }
+
+    List<TextSpan> spans = [];
+    int currentIndex = 0;
+
+    for (final match in matches) {
+      if (match.start > currentIndex) {
+        spans.add(TextSpan(text: text.substring(currentIndex, match.start), style: normalStyle));
+      }
+
+      spans.add(TextSpan(text: match.group(0), style: highlightStyle));
+      currentIndex = match.end;
+    }
+
+    if (currentIndex < text.length) {
+      spans.add(TextSpan(text: text.substring(currentIndex), style: normalStyle));
+    }
+
+    return TextSpan(children: spans);
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -342,15 +370,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
                               child: const Icon(Icons.chat, color: Colors.black),
                             ),
-                            title: Text(
-                              lastMessage,
-                              style: TextStyle(
-                                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
+                            title: RichText(
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                              text: _highlightMatch(
+                                lastMessage,
+                                _searchQuery,
+                                TextStyle(
+                                  color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                                const TextStyle(
+                                  backgroundColor: Colors.yellow,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                             subtitle: Text(
                               _formatDate(conversation.lastUpdated),
