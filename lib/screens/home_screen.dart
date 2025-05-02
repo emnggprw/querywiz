@@ -150,9 +150,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _handleRefresh() async {
-    await Future.delayed(const Duration(seconds: 1));
+    // Simulate delay (mimicking network request)
+    await Future.delayed(const Duration(seconds: 2));
+
+    final now = DateTime.now();
+
+    for (var conv in _conversations) {
+      // Option 1: Just update the lastUpdated timestamp directly
+      conv.lastUpdated = now;
+
+      // Option 2: Optionally, simulate a new message if desired
+      // conv.addMessage(Message(content: 'Refreshed!', timestamp: now));
+    }
+
+    if (!mounted) return;
     setState(() {});
   }
+
 
   TextSpan _highlightMatch(String text, String query, TextStyle normalStyle, TextStyle highlightStyle) {
     if (query.isEmpty) return TextSpan(text: text, style: normalStyle);
@@ -278,11 +292,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           Expanded(
-            child: _filteredConversations().isEmpty
-                ? EmptyStateWidget()
-                : RefreshIndicator(
+            child: RefreshIndicator(
               onRefresh: _handleRefresh,
-              child: SmoothScrollWrapper(
+              child: _filteredConversations().isEmpty
+                  ? ListView(children: [EmptyStateWidget()])
+                  : SmoothScrollWrapper(
                 controller: _scrollController,
                 child: ListView.builder(
                   controller: _scrollController,
