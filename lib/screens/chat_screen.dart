@@ -8,7 +8,7 @@ import 'package:querywiz/data/theme_provider.dart';
 import 'package:querywiz/models/conversation.dart';
 import 'package:querywiz/models/message.dart';
 import 'package:chat_bubbles/chat_bubbles.dart';
-import 'dart:async';
+import 'package:querywiz/widgets/typing_indicator.dart';
 
 class ChatScreen extends StatefulWidget {
   final Conversation conversation;
@@ -29,34 +29,22 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final String apiUrl = "https://api.example.com/chat";
   final apiKey = dotenv.env['API_KEY'];
 
-  // Typing animation
-  String _typingIndicator = 'QueryWiz is typing';
-  Timer? _typingTimer;
-  int _dotCount = 0;
-
   @override
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
-    _typingTimer?.cancel();
     super.dispose();
   }
 
   void _startTypingAnimation() {
-    _typingTimer?.cancel();
-    _dotCount = 0;
-    _typingTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      setState(() {
-        _dotCount = (_dotCount + 1) % 4;
-        _typingIndicator = 'QueryWiz is typing${'.' * _dotCount}';
-      });
+    setState(() {
+      _isLoading = true;
     });
   }
 
   void _stopTypingAnimation() {
-    _typingTimer?.cancel();
     setState(() {
-      _typingIndicator = '';
+      _isLoading = false;
     });
   }
 
@@ -190,15 +178,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             ),
           ),
           if (_isLoading)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                _typingIndicator,
-                style: TextStyle(
-                  color: isDarkMode ? Colors.cyanAccent : Colors.black,
-                  fontStyle: FontStyle.italic,
-                  fontSize: 16,
-                ),
+            Container(
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.only(left: 16.0, bottom: 8.0, top: 4.0),
+              child: TypingIndicator(
+                isTyping: _isLoading,
+                backgroundColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade400,
+                dotColor: isDarkMode ? Colors.cyanAccent : Colors.cyan,
               ),
             ),
           Padding(
