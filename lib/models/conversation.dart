@@ -4,9 +4,13 @@ class Conversation {
   final List<Message> messages;
   DateTime lastUpdated;
   bool isFavorite;
+  bool isPinned;
 
-  Conversation({required this.messages, this.isFavorite = false})
-      : lastUpdated = messages.isNotEmpty ? messages.last.timestamp : DateTime.now();
+  Conversation({
+    required this.messages,
+    this.isFavorite = false,
+    this.isPinned = false,
+  }) : lastUpdated = DateTime.now();
 
   void addMessage(Message message) {
     messages.add(message);

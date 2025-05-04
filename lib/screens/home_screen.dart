@@ -25,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         Message(text: "Hi there! How can I assist you?", isUser: false, timestamp: DateTime.now().subtract(const Duration(minutes: 4))),
       ],
       isFavorite: false,
+      isPinned: false,
     ),
     Conversation(
       messages: [
@@ -32,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         Message(text: "It's sunny and 75°F.", isUser: false, timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 2))),
       ],
       isFavorite: false,
+      isPinned: false,
     ),
   ];
 
@@ -111,11 +113,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _sortByTimestamp() {
     setState(() {
-      _conversations.sort((a, b) {
-        DateTime aTimestamp = a.messages.isNotEmpty ? a.messages.last.timestamp : DateTime.now();
-        DateTime bTimestamp = b.messages.isNotEmpty ? b.messages.last.timestamp : DateTime.now();
-        return bTimestamp.compareTo(aTimestamp);
-      });
+      _sortConversations();
     });
   }
 
@@ -237,6 +235,32 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         // Select all
         _selectedIndices = Set<int>.from(List<int>.generate(_filteredConversations().length, (i) => i));
       }
+    });
+  }
+
+  void _togglePin(int index) {
+    setState(() {
+      _conversations[index].isPinned = !_conversations[index].isPinned;
+      _sortConversations(); // Re-sort to move pinned items to top
+    });
+  }
+
+  void _sortByPinned() {
+    _sortConversations();
+  }
+
+  void _sortConversations() {
+    setState(() {
+      _conversations.sort((a, b) {
+        // First sort by pinned status
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+
+        // Within the same pin status group, sort by timestamp
+        DateTime aTimestamp = a.messages.isNotEmpty ? a.messages.last.timestamp : DateTime.now();
+        DateTime bTimestamp = b.messages.isNotEmpty ? b.messages.last.timestamp : DateTime.now();
+        return bTimestamp.compareTo(aTimestamp);
+      });
     });
   }
 
@@ -440,6 +464,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   child: ElevatedButton.icon(
                     icon: Icon(Icons.star, color: themeProvider.isDarkMode ? Colors.white : Colors.black),
                     label: Text("Favorites", style: TextStyle(color: themeProvider.isDarkMode ? Colors.white : Colors.black)),
+                    onPressed: null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                TapFeedbackWrapper(
+                  onTap: _sortByPinned,
+                  child: ElevatedButton.icon(
+                    icon: Icon(Icons.push_pin, color: themeProvider.isDarkMode ? Colors.white : Colors.black),
+                    label: Text("Pinned", style: TextStyle(color: themeProvider.isDarkMode ? Colors.white : Colors.black)),
                     onPressed: null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: themeProvider.isDarkMode ? Colors.cyan.shade700 : Colors.cyanAccent,
@@ -674,6 +711,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                IconButton(
+                  icon: Icon(
+                    conversation.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                    color: conversation.isPinned ? Colors.blue : Colors.grey,
+                  ),
+                  onPressed: () => _togglePin(index),
+                ),
                 IconButton(
                   icon: Icon(
                     conversation.isFavorite ? Icons.star : Icons.star_border,
