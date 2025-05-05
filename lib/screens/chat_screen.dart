@@ -25,15 +25,34 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
   bool _isLoading = false;
+  bool _hasText = false; // Track if the input field has text
 
   final String apiUrl = "https://api.example.com/chat";
   final apiKey = dotenv.env['API_KEY'];
 
   @override
+  void initState() {
+    super.initState();
+    // Add listener to text controller to update send button state
+    _controller.addListener(_updateInputState);
+  }
+
+  @override
   void dispose() {
+    _controller.removeListener(_updateInputState);
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  // Update the state tracking whether input has text
+  void _updateInputState() {
+    final hasText = _controller.text.trim().isNotEmpty;
+    if (hasText != _hasText) {
+      setState(() {
+        _hasText = hasText;
+      });
+    }
   }
 
   void _startTypingAnimation() {
@@ -207,14 +226,21 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         borderSide: BorderSide.none,
                       ),
                     ),
-                    onSubmitted: (_) => _sendMessage(),
+                    onSubmitted: (_) => _hasText ? _sendMessage() : null,
                   ),
                 ),
                 const SizedBox(width: 8),
                 FloatingActionButton(
-                  onPressed: _sendMessage,
-                  backgroundColor: Colors.cyanAccent,
-                  child: const Icon(Icons.send, color: Colors.black),
+                  onPressed: _hasText ? _sendMessage : null,
+                  backgroundColor: _hasText
+                      ? Colors.cyanAccent
+                      : isDarkMode ? Colors.grey.shade800 : Colors.grey.shade400,
+                  child: Icon(
+                    Icons.send,
+                    color: _hasText
+                        ? Colors.black
+                        : isDarkMode ? Colors.grey.shade600 : Colors.grey.shade600,
+                  ),
                 ),
               ],
             ),
