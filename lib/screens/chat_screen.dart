@@ -27,6 +27,21 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   bool _isLoading = false;
   bool _hasText = false; // Track if the input field has text
 
+  // Format timestamp to show time
+  String _formatTimestamp(DateTime timestamp) {
+    // Format as HH:MM (24-hour format)
+    final hour = timestamp.hour.toString().padLeft(2, '0');
+    final minute = timestamp.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+
+    // Alternative: For AM/PM format, uncomment below and comment out the above
+    // final hour = timestamp.hour > 12 ? timestamp.hour - 12 : timestamp.hour;
+    // final hourStr = hour == 0 ? '12' : hour.toString();
+    // final minute = timestamp.minute.toString().padLeft(2, '0');
+    // final period = timestamp.hour >= 12 ? 'PM' : 'AM';
+    // return '$hourStr:$minute $period';
+  }
+
   final String apiUrl = "https://api.example.com/chat";
   final apiKey = dotenv.env['API_KEY'];
 
@@ -171,6 +186,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               itemBuilder: (context, index, animation) {
                 final msg = widget.conversation.messages[index];
 
+                // Format the timestamp
+                final timeString = _formatTimestamp(msg.timestamp);
+
                 final bubble = BubbleNormal(
                   text: msg.text,
                   isSender: msg.isUser,
@@ -190,7 +208,30 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   ),
                   child: FadeTransition(
                     opacity: animation,
-                    child: bubble,
+                    child: Column(
+                      crossAxisAlignment: msg.isUser
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
+                      children: [
+                        bubble,
+                        Padding(
+                          padding: EdgeInsets.only(
+                            left: msg.isUser ? 0 : 12,
+                            right: msg.isUser ? 12 : 0,
+                            top: 2,
+                            bottom: 8,
+                          ),
+                          child: Text(
+                            timeString,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
