@@ -26,6 +26,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   bool _isLoading = false;
   bool _hasText = false; // Track if the input field has text
+  int? _pendingMessageIndex; // Track which message is currently pending
 
   // Format timestamp to show time
   String _formatTimestamp(DateTime timestamp) {
@@ -99,6 +100,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
     _controller.clear();
     _insertMessage(userMsg);
+
+    // Set this message as pending
+    setState(() {
+      _pendingMessageIndex = widget.conversation.messages.length - 1;
+    });
+
     _scrollToBottom();
     _startTypingAnimation();
 
@@ -113,7 +120,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     } catch (e) {
       Fluttertoast.showToast(msg: "Error: $e", backgroundColor: Colors.red);
     } finally {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _pendingMessageIndex = null; // Clear pending status
+      });
       _stopTypingAnimation();
       _scrollToBottom();
     }
@@ -189,6 +199,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 // Format the timestamp
                 final timeString = _formatTimestamp(msg.timestamp);
 
+                // Check if this message is pending
+                final isPending = _pendingMessageIndex != null &&
+                    index == _pendingMessageIndex &&
+                    msg.isUser;
+
+                // Create the message bubble
                 final bubble = BubbleNormal(
                   text: msg.text,
                   isSender: msg.isUser,
@@ -213,7 +229,27 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           ? CrossAxisAlignment.end
                           : CrossAxisAlignment.start,
                       children: [
-                        bubble,
+                        Stack(
+                          children: [
+                            bubble,
+                            if (isPending)
+                              Positioned(
+                                bottom: 8,
+                                right: msg.isUser ? 10 : null,
+                                left: msg.isUser ? null : 10,
+                                child: SizedBox(
+                                  width: 15,
+                                  height: 15,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      isDarkMode ? Colors.white70 : Colors.black54,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                         Padding(
                           padding: EdgeInsets.only(
                             left: msg.isUser ? 0 : 12,
@@ -221,13 +257,30 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                             top: 2,
                             bottom: 8,
                           ),
-                          child: Text(
-                            timeString,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-                              fontStyle: FontStyle.italic,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                timeString,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                              if (isPending)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 5),
+                                  child: Text(
+                                    "sending...",
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ],
