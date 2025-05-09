@@ -21,16 +21,36 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   final List<Conversation> _conversations = [
     Conversation(
       messages: [
-        Message(text: "Hello!", isUser: true, timestamp: DateTime.now().subtract(const Duration(minutes: 5))),
-        Message(text: "Hi there! How can I assist you?", isUser: false, timestamp: DateTime.now().subtract(const Duration(minutes: 4))),
+        Message(
+          text: "Hello!",
+          isUser: true,
+          timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+          status: MessageStatus.sent,
+        ),
+        Message(
+          text: "Hi there! How can I assist you?",
+          isUser: false,
+          timestamp: DateTime.now().subtract(const Duration(minutes: 4)),
+          status: MessageStatus.responded,
+        ),
       ],
       isFavorite: false,
       isPinned: false,
     ),
     Conversation(
       messages: [
-        Message(text: "What's the weather today?", isUser: true, timestamp: DateTime.now().subtract(const Duration(hours: 1))),
-        Message(text: "It's sunny and 75°F.", isUser: false, timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 2))),
+        Message(
+          text: "What's the weather today?",
+          isUser: true,
+          timestamp: DateTime.now().subtract(const Duration(hours: 1)),
+          status: MessageStatus.sent,
+        ),
+        Message(
+          text: "It's sunny and 75°F.",
+          isUser: false,
+          timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 2)),
+          status: MessageStatus.responded,
+        ),
       ],
       isFavorite: false,
       isPinned: false,

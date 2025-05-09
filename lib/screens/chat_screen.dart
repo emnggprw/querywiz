@@ -92,7 +92,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     final message = _controller.text.trim();
     if (message.isEmpty) return;
 
-    final userMsg = Message(text: message, isUser: true, timestamp: DateTime.now());
+    final userMsg = Message(
+      text: message,
+      isUser: true,
+      timestamp: DateTime.now(),
+      status: MessageStatus.sent, // User message is considered sent
+    );
 
     setState(() {
       _isLoading = true;
@@ -101,7 +106,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     _controller.clear();
     _insertMessage(userMsg);
 
-    // Set this message as pending
+    // Set this message as pending (or tracking index for updates)
     setState(() {
       _pendingMessageIndex = widget.conversation.messages.length - 1;
     });
@@ -110,19 +115,35 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     _startTypingAnimation();
 
     try {
+      // Insert placeholder AI message with generating status
+      final botTypingMsg = Message(
+        text: '...',
+        isUser: false,
+        timestamp: DateTime.now(),
+        status: MessageStatus.generating,
+      );
+      _insertMessage(botTypingMsg);
+      final aiMsgIndex = widget.conversation.messages.length - 1;
+
       final response = await _fetchResponse(message);
+
       final botMsg = Message(
         text: response ?? 'No response received.',
         isUser: false,
         timestamp: DateTime.now(),
+        status: response != null ? MessageStatus.responded : MessageStatus.error,
       );
-      _insertMessage(botMsg);
+
+      // Replace the placeholder with final response
+      setState(() {
+        widget.conversation.messages[aiMsgIndex] = botMsg;
+      });
     } catch (e) {
       Fluttertoast.showToast(msg: "Error: $e", backgroundColor: Colors.red);
     } finally {
       setState(() {
         _isLoading = false;
-        _pendingMessageIndex = null; // Clear pending status
+        _pendingMessageIndex = null;
       });
       _stopTypingAnimation();
       _scrollToBottom();
