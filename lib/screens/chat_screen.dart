@@ -225,7 +225,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     index == _pendingMessageIndex &&
                     msg.isUser;
 
-                // Create the message bubble
+                // Create the message bubble with rich text support
                 final bubble = BubbleNormal(
                   text: msg.text,
                   isSender: msg.isUser,
@@ -237,10 +237,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 );
 
                 return SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.3),
-                    end: Offset.zero,
-                  ).animate(
+                  position: Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
                     CurvedAnimation(parent: animation, curve: Curves.easeOut),
                   ),
                   child: FadeTransition(
@@ -311,6 +308,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               },
             ),
           ),
+
+          // Typing indicator
           if (_isLoading)
             Container(
               alignment: Alignment.centerLeft,
@@ -321,10 +320,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 dotColor: isDarkMode ? Colors.cyanAccent : Colors.cyan,
               ),
             ),
+
+          // Text input field with send button
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
+                // Input field for typing messages
                 Expanded(
                   child: TextField(
                     controller: _controller,
@@ -341,10 +343,17 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         borderSide: BorderSide.none,
                       ),
                     ),
+                    onChanged: (text) {
+                      setState(() {
+                        _hasText = text.isNotEmpty;
+                      });
+                    },
                     onSubmitted: (_) => _hasText ? _sendMessage() : null,
                   ),
                 ),
                 const SizedBox(width: 8),
+
+                // Send button
                 FloatingActionButton(
                   onPressed: _hasText ? _sendMessage : null,
                   backgroundColor: _hasText
@@ -364,4 +373,5 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
 }
