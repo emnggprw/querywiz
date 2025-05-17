@@ -511,7 +511,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: RefreshIndicator(
               onRefresh: _handleRefresh,
               child: filteredList.isEmpty
-                  ? ListView(children: [EmptyStateWidget()])
+                  ? EmptyStateWidget(
+                message: 'No conversations found',
+                subMessage: 'Your messages will appear here once you start chatting',
+                actionLabel: 'Start a conversation',
+                onActionPressed: () => _startNewConversation(),
+                // Maintains the same scroll physics as your list
+                physics: const AlwaysScrollableScrollPhysics(),
+              )
                   : SmoothScrollWrapper(
                 controller: _scrollController,
                 child: ListView.builder(
